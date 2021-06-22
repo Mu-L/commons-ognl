@@ -43,9 +43,9 @@ public class ASTConst
         super( p, id );
     }
 
-    /** 
+    /**
      * Called from parser actions.
-     * @param value the value to set 
+     * @param value the value to set
      */
     public void setValue( Object value )
     {
@@ -71,11 +71,6 @@ public class ASTConst
 
     public Class getGetterClass()
     {
-        if ( getterClass == null )
-        {
-            return null;
-        }
-        
         return getterClass;
     }
 
@@ -86,12 +81,12 @@ public class ASTConst
 
     public String toGetSourceString( OgnlContext context, Object target )
     {
-        if ( value == null && parent != null && ExpressionNode.class.isInstance( parent ) )
+        if ( value == null && parent != null && parent instanceof ExpressionNode)
         {
             context.setCurrentType( null );
             return "null";
         }
-        else if ( value == null )
+        if ( value == null )
         {
             context.setCurrentType( null );
             return "";
@@ -100,21 +95,21 @@ public class ASTConst
         getterClass = value.getClass();
 
         Object retval = value;
-        if ( parent != null && ASTProperty.class.isInstance( parent ) )
+        if ( parent != null && parent instanceof ASTProperty)
         {
             context.setCurrentObject( value );
 
             return value.toString();
         }
-        else if ( value != null && Number.class.isAssignableFrom( value.getClass() ) )
+        if ( value != null && Number.class.isAssignableFrom( value.getClass() ) )
         {
             context.setCurrentType( OgnlRuntime.getPrimitiveWrapperClass( value.getClass() ) );
             context.setCurrentObject( value );
 
             return value.toString();
         }
-        else if ( !( parent != null
-                        && value != null 
+        if ( !( parent != null
+                        && value != null
                         && NumericExpression.class.isAssignableFrom( parent.getClass() ) )
             && String.class.isAssignableFrom( value.getClass() ) )
         {
@@ -126,7 +121,7 @@ public class ASTConst
 
             return retval.toString();
         }
-        else if ( Character.class.isInstance( value ) )
+        if (value instanceof Character)
         {
             Character val = (Character) value;
 
@@ -140,7 +135,7 @@ public class ASTConst
             {
                 retval = "'" + OgnlOps.getEscapedChar( ( (Character) value ).charValue() ) + "'";
             }
-            
+
             context.setCurrentObject( retval );
             return retval.toString();
         }
@@ -164,10 +159,10 @@ public class ASTConst
         {
             throw new UnsupportedCompilationException( "Can't modify constant values." );
         }
-        
+
         return toGetSourceString( context, target );
     }
-    
+
     public <R, P> R accept( NodeVisitor<? extends R, ? super P> visitor, P data )
         throws OgnlException
     {

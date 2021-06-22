@@ -122,7 +122,7 @@ public class OgnlRuntime
      */
     private static final String NULL_OBJECT_STRING = "<null>";
 
-    static OgnlCache cache = new OgnlCache();
+    static final OgnlCache cache = new OgnlCache();
 
     private static final PrimitiveTypes primitiveTypes = new PrimitiveTypes();
 
@@ -395,8 +395,7 @@ public class OgnlRuntime
     public static Class<?>[] findParameterTypes( Class<?> type, Method method )
         throws CacheException
     {
-        if ( type == null || type.getGenericSuperclass() == null || !ParameterizedType.class.isInstance(
-            type.getGenericSuperclass() ) || method.getDeclaringClass().getTypeParameters() == null )
+        if ( type == null || type.getGenericSuperclass() == null || !(type.getGenericSuperclass() instanceof ParameterizedType) || method.getDeclaringClass().getTypeParameters() == null )
         {
             return getParameterTypes( method );
         }
@@ -508,7 +507,7 @@ public class OgnlRuntime
         {
             return Boolean.TYPE;
         }
-        else if ( clazz.getSuperclass() == Number.class )
+        if ( clazz.getSuperclass() == Number.class )
         {
             if ( clazz == Integer.class )
             {
@@ -629,11 +628,11 @@ public class OgnlRuntime
                 {
                     return true;
                 }
-                else if ( class1.isAssignableFrom( class2 ) )
+                if ( class1.isAssignableFrom( class2 ) )
                 {
                     return false;
                 }
-                else if ( class2.isAssignableFrom( class1 ) )
+                if ( class2.isAssignableFrom( class1 ) )
                 {
                     return true;
                 }
@@ -700,7 +699,7 @@ public class OgnlRuntime
 
     public static boolean getConvertedTypes( OgnlContext context, Object target, Member member, String propertyName,
                                              Class<?>[] parameterTypes, Object[] args, Object[] newArgs )
-        
+
     {
         boolean result = false;
 
@@ -736,7 +735,7 @@ public class OgnlRuntime
 
     public static Method getConvertedMethodAndArgs( OgnlContext context, Object target, String propertyName,
                                                     List<Method> methods, Object[] args, Object[] newArgs )
-        
+
     {
         Method convertedMethod = null;
         TypeConverter typeConverter = context.getTypeConverter();
@@ -762,7 +761,7 @@ public class OgnlRuntime
     public static Constructor<?> getConvertedConstructorAndArgs( OgnlContext context, Object target,
                                                                  List<Constructor<?>> constructors, Object[] args,
                                                                  Object[] newArgs )
-        
+
     {
         Constructor<?> constructor = null;
         TypeConverter typeConverter = context.getTypeConverter();
@@ -799,7 +798,7 @@ public class OgnlRuntime
      */
     public static Method getAppropriateMethod( OgnlContext context, Object source, Object target, String propertyName,
                                                List<Method> methods, Object[] args, Object[] actualArgs )
-        
+
     {
         Method appropriateMethod = null;
         Class<?>[] resultParameterTypes = null;
@@ -809,7 +808,7 @@ public class OgnlRuntime
             for ( Method method : methods )
             {
                 Class<?> typeClass = target != null ? target.getClass() : null;
-                if ( typeClass == null && source != null && Class.class.isInstance( source ) )
+                if ( typeClass == null && source != null && source instanceof Class)
                 {
                     typeClass = (Class<?>) source;
                 }
@@ -927,15 +926,10 @@ public class OgnlRuntime
             return invokeMethod( target, method, convertedArgs );
 
         }
-        catch ( NoSuchMethodException e )
+        catch ( NoSuchMethodException | IllegalAccessException e )
         {
             cause = e;
-        }
-        catch ( IllegalAccessException e )
-        {
-            cause = e;
-        }
-        catch ( InvocationTargetException e )
+        } catch ( InvocationTargetException e )
         {
             cause = e.getTargetException();
         }
@@ -1019,25 +1013,12 @@ public class OgnlRuntime
             }
             return ctor.newInstance( actualArgs );
         }
-        catch ( ClassNotFoundException e )
+        catch ( ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException e )
         {
             cause = e;
-        }
-        catch ( NoSuchMethodException e )
-        {
-            cause = e;
-        }
-        catch ( IllegalAccessException e )
-        {
-            cause = e;
-        }
-        catch ( InvocationTargetException e )
+        } catch ( InvocationTargetException e )
         {
             cause = e.getTargetException();
-        }
-        catch ( InstantiationException e )
-        {
-            cause = e;
         }
 
         throw new MethodFailedException( className, "new", cause );
@@ -1065,29 +1046,22 @@ public class OgnlRuntime
             method = getReadMethod( targetClass, propertyName, 0 );
         }
 
-        if ( checkAccessAndExistence )
+        if ( checkAccessAndExistence && (( method == null ) || !context.getMemberAccess().isAccessible( context, target, method, propertyName )) )
         {
-            if ( ( method == null ) || !context.getMemberAccess().isAccessible( context, target, method, propertyName ) )
-            {
-                methodValue = NotFound;
-            }
+            methodValue = NotFound;
         }
         if ( methodValue == null )
         {
-            if ( method != null )
-            {
-                try
-                {
-                    methodValue = invokeMethod( target, method, NoArguments );
-                }
-                catch ( InvocationTargetException ex )
-                {
-                    throw new OgnlException( propertyName, ex.getTargetException() );
-                }
-            }
-            else
-            {
+            if ( method == null ) {
                 throw new NoSuchMethodException( propertyName );
+            }
+            try
+            {
+                methodValue = invokeMethod( target, method, NoArguments );
+            }
+            catch ( InvocationTargetException ex )
+            {
+                throw new OgnlException( propertyName, ex.getTargetException() );
             }
         }
         return methodValue;
@@ -1106,12 +1080,9 @@ public class OgnlRuntime
         boolean result = true;
         Method method = getSetMethod( context, ( target == null ) ? null : target.getClass(), propertyName );
 
-        if ( checkAccessAndExistence )
+        if ( checkAccessAndExistence && (( method == null ) || !context.getMemberAccess().isAccessible( context, target, method, propertyName )) )
         {
-            if ( ( method == null ) || !context.getMemberAccess().isAccessible( context, target, method, propertyName ) )
-            {
-                result = false;
-            }
+            result = false;
         }
 
         if ( result )
@@ -1195,12 +1166,9 @@ public class OgnlRuntime
         Class<?> targetClass = target == null ? null : target.getClass();
         Field field = getField( targetClass, propertyName );
 
-        if ( checkAccessAndExistence )
+        if ( checkAccessAndExistence && (( field == null ) || !context.getMemberAccess().isAccessible( context, target, field, propertyName )) )
         {
-            if ( ( field == null ) || !context.getMemberAccess().isAccessible( context, target, field, propertyName ) )
-            {
-                result = NotFound;
-            }
+            result = NotFound;
         }
         if ( result == null )
         {
@@ -1212,16 +1180,12 @@ public class OgnlRuntime
             {
                 Object state;
 
-                if ( !Modifier.isStatic( field.getModifiers() ) )
-                {
-                    state = context.getMemberAccess().setup( context, target, field, propertyName );
-                    result = field.get( target );
-                    context.getMemberAccess().restore( context, target, field, propertyName, state );
-                }
-                else
-                {
+                if ( Modifier.isStatic( field.getModifiers() ) ) {
                     throw new NoSuchFieldException( propertyName );
                 }
+                state = context.getMemberAccess().setup( context, target, field, propertyName );
+                result = field.get( target );
+                context.getMemberAccess().restore( context, target, field, propertyName, state );
 
             }
             catch ( IllegalAccessException ex )
@@ -1301,34 +1265,19 @@ public class OgnlRuntime
             {
                 return clazz;
             }
-            else if ( clazz.isEnum() )
+            if ( clazz.isEnum() )
             {
                 return Enum.valueOf( (Class<? extends Enum>) clazz, fieldName );
             }
-            else
+            Field field = clazz.getField( fieldName );
+            if ( !Modifier.isStatic(field.getModifiers()) )
             {
-                Field field = clazz.getField( fieldName );
-                if ( !Modifier.isStatic(field.getModifiers()) )
-                {
-                    throw new OgnlException( "Field " + fieldName + " of class " + className + " is not static" );
-                }
-
-                return field.get( null );
+                throw new OgnlException( "Field " + fieldName + " of class " + className + " is not static" );
             }
+
+            return field.get( null );
         }
-        catch ( ClassNotFoundException e )
-        {
-            cause = e;
-        }
-        catch ( NoSuchFieldException e )
-        {
-            cause = e;
-        }
-        catch ( SecurityException e )
-        {
-            cause = e;
-        }
-        catch ( IllegalAccessException e )
+        catch ( ClassNotFoundException | IllegalAccessException | SecurityException | NoSuchFieldException e )
         {
             cause = e;
         }
@@ -1667,14 +1616,10 @@ public class OgnlRuntime
             }
             else
             {
-                if ( propertyDescriptor instanceof ObjectIndexedPropertyDescriptor )
-                {
-                    method = ( (ObjectIndexedPropertyDescriptor) propertyDescriptor ).getIndexedReadMethod();
-                }
-                else
-                {
+                if ( !(propertyDescriptor instanceof ObjectIndexedPropertyDescriptor) ) {
                     throw new OgnlException( "property '" + name + "' is not an indexed property" );
                 }
+                method = ( (ObjectIndexedPropertyDescriptor) propertyDescriptor ).getIndexedReadMethod();
             }
 
             return callMethod( context, source, method.getName(), args );
@@ -1706,14 +1651,10 @@ public class OgnlRuntime
             }
             else
             {
-                if ( propertyDescriptor instanceof ObjectIndexedPropertyDescriptor )
-                {
-                    method = ( (ObjectIndexedPropertyDescriptor) propertyDescriptor ).getIndexedWriteMethod();
-                }
-                else
-                {
+                if ( !(propertyDescriptor instanceof ObjectIndexedPropertyDescriptor) ) {
                     throw new OgnlException( "property '" + name + "' is not an indexed property" );
                 }
+                method = ( (ObjectIndexedPropertyDescriptor) propertyDescriptor ).getIndexedWriteMethod();
             }
 
             callMethod( context, source, method.getName(), args );
@@ -1847,7 +1788,7 @@ public class OgnlRuntime
     {
         try
         {
-            name = name.replaceAll( "\"", "" ).toLowerCase();
+            name = name.replace( "\"", "" ).toLowerCase();
 
             BeanInfo info = Introspector.getBeanInfo( target );
             MethodDescriptor[] methodDescriptors = info.getMethodDescriptors();
@@ -1875,13 +1816,13 @@ public class OgnlRuntime
                     {
                         return methodDescriptor.getMethod();
                     }
-                    else if ( numParms < 0 )
+                    if ( numParms < 0 )
                     {
                         if ( methodName.equals( name ) )
                         {
                             return methodDescriptor.getMethod();
                         }
-                        else if ( method == null || ( method.getParameterTypes().length > methodParamLen ) )
+                        if ( method == null || ( method.getParameterTypes().length > methodParamLen ) )
                         {
                             method = methodDescriptor.getMethod();
                         }
@@ -1909,13 +1850,10 @@ public class OgnlRuntime
                     {
                         return methodDescriptor.getMethod();
                     }
-                    else if ( numParms < 0 )
+                    if ( (numParms < 0) && (method == null || ( method.getParameterTypes().length
+                        > methodDescriptor.getMethod().getParameterTypes().length )) )
                     {
-                        if ( method == null || ( method.getParameterTypes().length
-                            > methodDescriptor.getMethod().getParameterTypes().length ) )
-                        {
-                            method = methodDescriptor.getMethod();
-                        }
+                        method = methodDescriptor.getMethod();
                     }
                 }
             }
@@ -1950,7 +1888,7 @@ public class OgnlRuntime
     {
         try
         {
-            name = name.replaceAll( "\"", "" );
+            name = name.replace( "\"", "" );
 
             BeanInfo info = Introspector.getBeanInfo( target );
             MethodDescriptor[] methods = info.getMethodDescriptors();
@@ -1971,7 +1909,7 @@ public class OgnlRuntime
                     {
                         return method.getMethod();
                     }
-                    else if ( numParms < 0 )
+                    if ( numParms < 0 )
                     {
                         return method.getMethod();
                     }
@@ -1997,7 +1935,7 @@ public class OgnlRuntime
                     {
                         return cmethod;
                     }
-                    else if ( numParms < 0 )
+                    if ( numParms < 0 )
                     {
                         return cmethod;
                     }
@@ -2147,7 +2085,7 @@ public class OgnlRuntime
 
         // handle root / method expressions that may not have proper root java source access
 
-        if ( !ASTConst.class.isInstance( child ) && ( target == null || context.getRoot() != target ) )
+        if ( !(child instanceof ASTConst) && ( target == null || context.getRoot() != target ) )
         {
             source = pre + source;
         }
@@ -2158,7 +2096,7 @@ public class OgnlRuntime
             context.setCurrentAccessor( context.getRoot().getClass() );
         }
 
-        if ( ASTChain.class.isInstance( child ) )
+        if (child instanceof ASTChain)
         {
             String cast = (String) context.remove( ExpressionCompiler.PRE_CAST );
             if ( cast == null )

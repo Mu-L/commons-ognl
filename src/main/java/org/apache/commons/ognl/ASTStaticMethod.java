@@ -84,7 +84,7 @@ public class ASTStaticMethod
 
     public String toGetSourceString( OgnlContext context, Object target )
     {
-        String result = className + "#" + methodName + "(";
+        StringBuilder result = new StringBuilder(className + "#" + methodName + "(");
 
         try
         {
@@ -113,7 +113,7 @@ public class ASTStaticMethod
                 {
                     if ( i > 0 )
                     {
-                        result = result + ", ";
+                        result.append(", ");
                     }
 
                     Class prevType = context.getCurrentType();
@@ -150,7 +150,7 @@ public class ASTStaticMethod
                                 + ")org.apache.commons.ognl.OgnlOps.convertValue(" + parmString + ","
                                 + parms[i].getName() + ".class)", parms[i] );
                         }
-                        else if ( ( NodeType.class.isInstance( child ) && ( (NodeType) child ).getGetterClass() != null
+                        else if ( ( child instanceof NodeType && ( (NodeType) child ).getGetterClass() != null
                             && Number.class.isAssignableFrom( ( (NodeType) child ).getGetterClass() ) )
                             || valueClass.isPrimitive() )
                         {
@@ -162,11 +162,11 @@ public class ASTStaticMethod
                         }
                     }
 
-                    result += parmString;
+                    result.append(parmString);
                 }
             }
 
-            result += ")";
+            result.append(")");
 
             try
             {
@@ -192,7 +192,7 @@ public class ASTStaticMethod
             throw OgnlOps.castToRuntime( t );
         }
 
-        return result;
+        return result.toString();
     }
 
     public String toSetSourceString( OgnlContext context, Object target )

@@ -88,7 +88,7 @@ public class ExpressionCompiler
      * store the cast java source string in to the current {@link org.apache.commons.ognl.OgnlContext}. This will either
      * add to the existing string present if it already exists or create a new instance and store it using the static
      * key of {@link #PRE_CAST}.
-     * 
+     *
      * @param context The current execution context.
      * @param cast The java source string to store in to the context.
      */
@@ -114,7 +114,7 @@ public class ExpressionCompiler
      * For instance, if given an {@link Integer} object the string <code>"java.lang.Integer"</code> would be returned.
      * For an array of primitive ints <code>"int[]"</code> and so on..
      * </p>
-     * 
+     *
      * @param type The class to cast a string expression for.
      * @return The converted raw string version of the class name.
      */
@@ -132,7 +132,7 @@ public class ExpressionCompiler
      * Convenience method called by many different property/method resolving AST types to get a root expression
      * resolving string for the given node. The callers are mostly ignorant and rely on this method to properly
      * determine if the expression should be cast at all and take the appropriate actions if it should.
-     * 
+     *
      * @param expression The node to check and generate a root expression to if necessary.
      * @param root The root object for this execution.
      * @param context The current execution context.
@@ -148,27 +148,26 @@ public class ExpressionCompiler
             return rootExpr;
         }
 
-        if ( ( !ASTList.class.isInstance( expression ) && !ASTVarRef.class.isInstance( expression )
-            && !ASTStaticMethod.class.isInstance( expression ) && !ASTStaticField.class.isInstance( expression )
-            && !ASTConst.class.isInstance( expression ) && !ExpressionNode.class.isInstance( expression )
-            && !ASTCtor.class.isInstance( expression ) && !ASTStaticMethod.class.isInstance( expression )
-            && root != null ) || ( root != null && ASTRootVarRef.class.isInstance( expression ) ) )
+        if ( ( !(expression instanceof ASTList) && !(expression instanceof ASTVarRef)
+            && !(expression instanceof ASTStaticMethod) && !(expression instanceof ASTStaticField)
+            && !(expression instanceof ASTConst) && !(expression instanceof ExpressionNode)
+            && !(expression instanceof ASTCtor) && !(expression instanceof ASTStaticMethod)
+            && root != null ) || ( root != null && expression instanceof ASTRootVarRef) )
         {
 
             Class<?> castClass = OgnlRuntime.getCompiler( context ).getRootExpressionClass( expression, context );
 
-            if ( castClass.isArray() || ASTRootVarRef.class.isInstance( expression ) || ASTThisVarRef.class.isInstance(
-                expression ) )
+            if ( castClass.isArray() || expression instanceof ASTRootVarRef || expression instanceof ASTThisVarRef)
             {
                 rootExpr = "((" + getCastString( castClass ) + ")$2)";
 
-                if ( ASTProperty.class.isInstance( expression ) && !( (ASTProperty) expression ).isIndexedAccess() )
+                if ( expression instanceof ASTProperty && !( (ASTProperty) expression ).isIndexedAccess() )
                 {
                     rootExpr += ".";
                 }
             }
-            else if ( ( ASTProperty.class.isInstance( expression ) && ( (ASTProperty) expression ).isIndexedAccess() )
-                || ASTChain.class.isInstance( expression ) )
+            else if ( ( expression instanceof ASTProperty && ( (ASTProperty) expression ).isIndexedAccess() )
+                || expression instanceof ASTChain)
             {
                 rootExpr = "((" + getCastString( castClass ) + ")$2)";
             }
@@ -190,18 +189,18 @@ public class ExpressionCompiler
      */
     public static boolean shouldCast( Node expression )
     {
-        if ( ASTChain.class.isInstance( expression ) )
+        if (expression instanceof ASTChain)
         {
             Node child = expression.jjtGetChild( 0 );
-            if ( ASTConst.class.isInstance( child ) || ASTStaticMethod.class.isInstance( child )
-                || ASTStaticField.class.isInstance( child ) || ( ASTVarRef.class.isInstance( child )
-                && !ASTRootVarRef.class.isInstance( child ) ) )
+            if ( child instanceof ASTConst || child instanceof ASTStaticMethod
+                || child instanceof ASTStaticField || ( child instanceof ASTVarRef
+                && !(child instanceof ASTRootVarRef)) )
             {
                 return false;
             }
         }
 
-        return !ASTConst.class.isInstance( expression );
+        return !(expression instanceof ASTConst);
     }
 
     /**
@@ -218,11 +217,11 @@ public class ExpressionCompiler
                 && context.getCurrentAccessor().isAssignableFrom( context.getPreviousType() ) ) || body == null
             || body.trim().length() < 1 || ( context.getCurrentType() != null && context.getCurrentType().isArray() && (
             context.getPreviousType() == null || context.getPreviousType() != Object.class ) )
-            || ASTOr.class.isInstance( expression ) || ASTAnd.class.isInstance( expression )
-            || ASTRootVarRef.class.isInstance( expression ) || context.getCurrentAccessor() == Class.class || (
+            || expression instanceof ASTOr || expression instanceof ASTAnd
+            || expression instanceof ASTRootVarRef || context.getCurrentAccessor() == Class.class || (
             context.get( ExpressionCompiler.PRE_CAST ) != null && ( (String) context.get(
-                ExpressionCompiler.PRE_CAST ) ).startsWith( "new" ) ) || ASTStaticField.class.isInstance( expression )
-            || ASTStaticMethod.class.isInstance( expression ) || ( OrderedReturn.class.isInstance( expression )
+                ExpressionCompiler.PRE_CAST ) ).startsWith( "new" ) ) || expression instanceof ASTStaticField
+            || expression instanceof ASTStaticMethod || ( expression instanceof OrderedReturn
             && ( (OrderedReturn) expression ).getLastExpression() != null ) )
         {
             return body;
@@ -265,7 +264,7 @@ public class ExpressionCompiler
             {
                 return intface.getName();
             }
-            else if ( intface.getName().indexOf( "Iterator" ) > 0 )
+            if ( intface.getName().indexOf( "Iterator" ) > 0 )
             {
                 return intface.getName();
             }
@@ -326,7 +325,7 @@ public class ExpressionCompiler
     /**
      * Helper utility method used by compiler to help resolve class->method mappings during method calls to
      * {@link OgnlExpressionCompiler#getSuperOrInterfaceClass(java.lang.reflect.Method, Class)}.
-     * 
+     *
      * @param m The method to check for existance of.
      * @param clazz The class to check for the existance of a matching method definition to the method passed in.
      * @return True if the class contains the specified method, false otherwise.
@@ -428,19 +427,19 @@ public class ExpressionCompiler
             {
                 return List.class;
             }
-            else if ( Iterator.class.isAssignableFrom( anIntf ) )
+            if ( Iterator.class.isAssignableFrom( anIntf ) )
             {
                 return Iterator.class;
             }
-            else if ( Map.class.isAssignableFrom( anIntf ) )
+            if ( Map.class.isAssignableFrom( anIntf ) )
             {
                 return Map.class;
             }
-            else if ( Set.class.isAssignableFrom( anIntf ) )
+            if ( Set.class.isAssignableFrom( anIntf ) )
             {
                 return Set.class;
             }
-            else if ( Collection.class.isAssignableFrom( anIntf ) )
+            if ( Collection.class.isAssignableFrom( anIntf ) )
             {
                 return Collection.class;
             }
@@ -619,10 +618,10 @@ public class ExpressionCompiler
 
         createLocalReferences( context, classPool, newClass, objClass, valueGetter.getParameterTypes() );
 
-        if ( OrderedReturn.class.isInstance( expression )
+        if ( expression instanceof OrderedReturn
             && ( (OrderedReturn) expression ).getLastExpression() != null )
         {
-            body = "{ " + ( ASTMethod.class.isInstance( expression ) || ASTChain.class.isInstance( expression )
+            body = "{ " + ( expression instanceof ASTMethod || expression instanceof ASTChain
                 ? rootExpr
                 : "" ) + ( castExpression != null ? castExpression : "" )
                 + ( (OrderedReturn) expression ).getCoreExpression() + " return " + pre
@@ -697,7 +696,7 @@ public class ExpressionCompiler
                                      CtMethod valueSetter, Node expression, Object root )
         throws Exception
     {
-        if ( ExpressionNode.class.isInstance( expression ) || ASTConst.class.isInstance( expression ) )
+        if ( expression instanceof ExpressionNode || expression instanceof ASTConst)
         {
             throw new UnsupportedCompilationException( "Can't compile expression/constant setters." );
         }
@@ -744,7 +743,7 @@ public class ExpressionCompiler
 
     /**
      * Fail safe getter creation when normal compilation fails.
-     * 
+     *
      * @param clazz The javassist class the new method should be attached to.
      * @param valueGetter The method definition the generated code will be contained within.
      * @param node The root expression node.
@@ -765,7 +764,7 @@ public class ExpressionCompiler
 
     /**
      * Fail safe setter creation when normal compilation fails.
-     * 
+     *
      * @param clazz The javassist class the new method should be attached to.
      * @param valueSetter The method definition the generated code will be contained within.
      * @param node The root expression node.
@@ -787,7 +786,7 @@ public class ExpressionCompiler
     /**
      * Creates a {@link ClassLoader} instance compatible with the javassist classloader and normal OGNL class resolving
      * semantics.
-     * 
+     *
      * @param context The current execution context.
      * @return The created {@link ClassLoader} instance.
      */
@@ -810,7 +809,7 @@ public class ExpressionCompiler
 
     /**
      * Loads a new class definition via javassist for the specified class.
-     * 
+     *
      * @param searchClass The class to load.
      * @return The javassist class equivalent.
      * @throws javassist.NotFoundException When the class definition can't be found.
@@ -825,7 +824,7 @@ public class ExpressionCompiler
      * Gets either a new or existing {@link ClassPool} for use in compiling javassist classes. A new class path object
      * is inserted in to the returned {@link ClassPool} using the passed in <code>loader</code> instance if a new pool
      * needs to be created.
-     * 
+     *
      * @param context The current execution context.
      * @param loader The {@link ClassLoader} instance to use - as returned by
      *            {@link #getClassLoader(org.apache.commons.ognl.OgnlContext)}.

@@ -92,15 +92,7 @@ public class ASTStaticField
                 result = Modifier.isFinal( field.getModifiers() );
             }
         }
-        catch ( ClassNotFoundException e )
-        {
-            cause = e;
-        }
-        catch ( NoSuchFieldException e )
-        {
-            cause = e;
-        }
-        catch ( SecurityException e )
+        catch ( ClassNotFoundException | SecurityException | NoSuchFieldException e )
         {
             cause = e;
         }
@@ -109,7 +101,7 @@ public class ASTStaticField
         {
             throw new OgnlException( "Could not get static field " + fieldName + " from class " + className, cause );
         }
-        
+
         return result;
     }
 
@@ -130,26 +122,15 @@ public class ASTStaticField
             {
                 return clazz;
             }
-            else if ( clazz.isEnum() )
+            if ( clazz.isEnum() )
             {
                 return clazz;
             }
-            else
-            {
-                Field field = clazz.getField( fieldName );
+            Field field = clazz.getField( fieldName );
 
-                return field.getType();
-            }
+            return field.getType();
         }
-        catch ( ClassNotFoundException e )
-        {
-            cause = e;
-        }
-        catch ( NoSuchFieldException e )
-        {
-            cause = e;
-        }
-        catch ( SecurityException e )
+        catch ( ClassNotFoundException | SecurityException | NoSuchFieldException e )
         {
             cause = e;
         }
@@ -209,7 +190,7 @@ public class ASTStaticField
 
         return className + "." + fieldName;
     }
-    
+
     public <R, P> R accept( NodeVisitor<? extends R, ? super P> visitor, P data )
         throws OgnlException
     {

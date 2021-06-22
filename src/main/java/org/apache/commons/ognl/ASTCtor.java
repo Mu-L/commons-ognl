@@ -87,52 +87,48 @@ public class ASTCtor
         }
         if ( isArray )
         {
-            if ( args.length == 1 )
+            if ( args.length != 1 ) {
+                throw new OgnlException( "only expect array size or fixed initializer list" );
+            }
+            try
             {
-                try
+                Class componentClass = OgnlRuntime.classForName( context, className );
+                List sourceList = null;
+                int size;
+
+                if ( args[0] instanceof List )
                 {
-                    Class componentClass = OgnlRuntime.classForName( context, className );
-                    List sourceList = null;
-                    int size;
+                    sourceList = (List) args[0];
+                    size = sourceList.size();
+                }
+                else
+                {
+                    size = (int) OgnlOps.longValue( args[0] );
+                }
+                result = Array.newInstance( componentClass, size );
+                if ( sourceList != null )
+                {
+                    TypeConverter converter = context.getTypeConverter();
 
-                    if ( args[0] instanceof List )
+                    for ( int i = 0, icount = sourceList.size(); i < icount; i++ )
                     {
-                        sourceList = (List) args[0];
-                        size = sourceList.size();
-                    }
-                    else
-                    {
-                        size = (int) OgnlOps.longValue( args[0] );
-                    }
-                    result = Array.newInstance( componentClass, size );
-                    if ( sourceList != null )
-                    {
-                        TypeConverter converter = context.getTypeConverter();
+                        Object o = sourceList.get( i );
 
-                        for ( int i = 0, icount = sourceList.size(); i < icount; i++ )
+                        if ( ( o == null ) || componentClass.isInstance( o ) )
                         {
-                            Object o = sourceList.get( i );
-
-                            if ( ( o == null ) || componentClass.isInstance( o ) )
-                            {
-                                Array.set( result, i, o );
-                            }
-                            else
-                            {
-                                Array.set( result, i,
-                                           converter.convertValue( context, null, null, null, o, componentClass ) );
-                            }
+                            Array.set( result, i, o );
+                        }
+                        else
+                        {
+                            Array.set( result, i,
+                                       converter.convertValue( context, null, null, null, o, componentClass ) );
                         }
                     }
                 }
-                catch ( ClassNotFoundException ex )
-                {
-                    throw new OgnlException( "array component class '" + className + "' not found", ex );
-                }
             }
-            else
+            catch ( ClassNotFoundException ex )
             {
-                throw new OgnlException( "only expect array size or fixed initializer list" );
+                throw new OgnlException( "array component class '" + className + "' not found", ex );
             }
         }
         else
@@ -146,7 +142,7 @@ public class ASTCtor
 
     public String toGetSourceString( OgnlContext context, Object target )
     {
-        String result = "new " + className;
+        StringBuilder result = new StringBuilder("new " + className);
 
         Class clazz = null;
         Object ctorValue = null;
@@ -183,30 +179,28 @@ public class ASTCtor
                 if ( children[0] instanceof ASTConst )
                 {
 
-                    result = result + "[" + children[0].toGetSourceString( context, target ) + "]";
+                    result.append("[").append(children[0].toGetSourceString(context, target)).append("]");
                 }
-                else if ( ASTProperty.class.isInstance( children[0] ) )
+                else if (children[0] instanceof ASTProperty)
                 {
 
-                    result =
-                        result + "[" + ExpressionCompiler.getRootExpression( children[0], target, context )
-                            + children[0].toGetSourceString( context, target ) + "]";
+                    result.append("[").append(ExpressionCompiler.getRootExpression(children[0], target, context)).append(children[0].toGetSourceString(context, target)).append("]");
                 }
-                else if ( ASTChain.class.isInstance( children[0] ) )
+                else if (children[0] instanceof ASTChain)
                 {
 
-                    result = result + "[" + children[0].toGetSourceString( context, target ) + "]";
+                    result.append("[").append(children[0].toGetSourceString(context, target)).append("]");
                 }
                 else
                 {
 
-                    result = result + "[] " + children[0].toGetSourceString( context, target );
+                    result.append("[] ").append(children[0].toGetSourceString(context, target));
                 }
 
             }
             else
             {
-                result = result + "(";
+                result.append("(");
 
                 if ( ( children != null ) && ( children.length > 0 ) )
                 {
@@ -223,7 +217,7 @@ public class ASTCtor
                         Object objValue = children[i].getValue( context, context.getRoot() );
                         String value = children[i].toGetSourceString( context, target );
 
-                        if ( !ASTRootVarRef.class.isInstance( children[i] ) )
+                        if ( !(children[i] instanceof ASTRootVarRef))
                         {
                             value = ExpressionCompiler.getRootExpression( children[i], target, context ) + value;
                         }
@@ -238,12 +232,12 @@ public class ASTCtor
                         {
                             cast = "";
                         }
-                        
-                        if ( !ASTConst.class.isInstance( children[i] ) )
+
+                        if ( !(children[i] instanceof ASTConst))
                         {
                             value = cast + value;
                         }
-                        
+
                         values[i] = objValue;
                         expressions[i] = value;
                         types[i] = context.getCurrentType();
@@ -274,8 +268,8 @@ public class ASTCtor
                                                                         OgnlRuntime.getConstructors( clazz ), values,
                                                                         new Object[values.length] );
                     }
-                    
-                    if ( ctor == null ) 
+
+                    if ( ctor == null )
                     {
                         throw new NoSuchMethodException(
                             "Unable to find constructor appropriate for arguments in class: " + clazz );
@@ -288,7 +282,7 @@ public class ASTCtor
                     {
                         if ( i > 0 )
                         {
-                            result = result + ", ";
+                            result.append(", ");
                         }
 
                         String value = expressions[i];
@@ -307,22 +301,22 @@ public class ASTCtor
                         {
 
                             if ( values[i] != null && !types[i].isPrimitive() && !values[i].getClass().isArray()
-                                && !ASTConst.class.isInstance( children[i] ) )
+                                && !(children[i] instanceof ASTConst))
                             {
 
                                 value =
                                     "(" + OgnlRuntime.getCompiler( context ).getInterfaceClass( values[i].getClass() ).getName()
                                         + ")" + value;
                             }
-                            else if ( !ASTConst.class.isInstance( children[i] )
-                                || ( ASTConst.class.isInstance( children[i] ) && !types[i].isPrimitive() ) )
+                            else if ( !(children[i] instanceof ASTConst)
+                                || ( children[i] instanceof ASTConst && !types[i].isPrimitive() ) )
                             {
 
                                 if ( !types[i].isArray() && types[i].isPrimitive() && !ctorParamTypes[i].isPrimitive() )
                                 {
                                     value =
                                         "new "
-                                            + ExpressionCompiler.getCastString( 
+                                            + ExpressionCompiler.getCastString(
                                                 OgnlRuntime.getPrimitiveWrapperClass( types[i] ) )
                                             + "(" + value + ")";
                                 }
@@ -333,11 +327,11 @@ public class ASTCtor
                             }
                         }
 
-                        result += value;
+                        result.append(value);
                     }
 
                 }
-                result = result + ")";
+                result.append(")");
             }
 
             context.setCurrentType( ctorValue != null ? ctorValue.getClass() : clazz );
@@ -352,7 +346,7 @@ public class ASTCtor
 
         context.remove( "_ctorClass" );
 
-        return result;
+        return result.toString();
     }
 
     public String toSetSourceString( OgnlContext context, Object target )

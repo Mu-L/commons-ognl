@@ -118,26 +118,26 @@ public class MapPropertyAccessor
         context.setCurrentAccessor( Map.class );
         context.setCurrentType( Object.class );
 
-        if ( String.class.isInstance( index ) && !indexedAccess )
+        if ( index instanceof String && !indexedAccess )
         {
-            String key = indexStr.replaceAll( "\"", "" );
+            String key = indexStr.replace( "\"", "" );
 
             if ( "size".equals( key ) )
             {
                 context.setCurrentType( int.class );
                 return ".size()";
             }
-            else if ( "keys".equals( key ) || "keySet".equals( key ) )
+            if ( "keys".equals( key ) || "keySet".equals( key ) )
             {
                 context.setCurrentType( Set.class );
                 return ".keySet()";
             }
-            else if ( "values".equals( key ) )
+            if ( "values".equals( key ) )
             {
                 context.setCurrentType( Collection.class );
                 return ".values()";
             }
-            else if ( "isEmpty".equals( key ) )
+            if ( "isEmpty".equals( key ) )
             {
                 context.setCurrentType( boolean.class );
                 return ".isEmpty()";
@@ -154,9 +154,9 @@ public class MapPropertyAccessor
 
         String indexStr = index.toString();
 
-        if ( String.class.isInstance( index ) )
+        if (index instanceof String)
         {
-            String key = indexStr.replaceAll( "\"", "" );
+            String key = indexStr.replace( "\"", "" );
 
             if ( "size".equals( key ) || "keys".equals( key ) || "keySet".equals( key ) || "values".equals( key )
                 || "isEmpty".equals( key ) )

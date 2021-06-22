@@ -37,7 +37,7 @@ public class ObjectIndexedTest
      * =================================================================== Public static classes
      * ===================================================================
      */
-    public static interface TestInterface
+    public interface TestInterface
     {
         String getSunk( String index );
 
@@ -150,7 +150,6 @@ public class ObjectIndexedTest
      */
     public ObjectIndexedTest()
     {
-        super();
     }
 
     public ObjectIndexedTest( String name )

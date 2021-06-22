@@ -79,7 +79,6 @@ public class Performance
 
         public Results( int iterations, long time, boolean mvel )
         {
-            super();
             this.iterations = iterations;
             this.time = time;
             this.mvel = mvel;
@@ -276,7 +275,7 @@ public class Performance
 
         try
         {
-            _method = getClass().getMethod( javaMethodName, new Class[] {} );
+            _method = getClass().getMethod( javaMethodName );
         }
         catch ( Exception ex )
         {
@@ -320,17 +319,11 @@ public class Performance
         {
             return ( t1 - t0 ) >= MAX_TIME;
         }
-        else
+        if ( ITERATIONS_MODE )
         {
-            if ( ITERATIONS_MODE )
-            {
-                return _iterations >= MAX_ITERATIONS;
-            }
-            else
-            {
-                throw new RuntimeException( "no maximums specified" );
-            }
+            return _iterations >= MAX_ITERATIONS;
         }
+        throw new RuntimeException( "no maximums specified" );
     }
 
     /*

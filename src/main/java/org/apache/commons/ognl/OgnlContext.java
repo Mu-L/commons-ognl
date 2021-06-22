@@ -111,12 +111,12 @@ public class OgnlContext
             s = System.getProperty( PROPERTY_KEY_PREFIX + ".traceEvaluations" );
             if ( s != null )
             {
-                defaultTraceEvaluations = Boolean.valueOf( s.trim() );
+                defaultTraceEvaluations = Boolean.parseBoolean( s.trim() );
             }
             s = System.getProperty( PROPERTY_KEY_PREFIX + ".keepLastEvaluation" );
             if ( s != null )
             {
-                defaultKeepLastEvaluation = Boolean.valueOf( s.trim() );
+                defaultKeepLastEvaluation = Boolean.parseBoolean( s.trim() );
             }
         }
         catch ( SecurityException ex )
@@ -163,7 +163,6 @@ public class OgnlContext
 
     public OgnlContext( Map<String, Object> values )
     {
-        super();
         this.values = values;
     }
 
@@ -344,7 +343,7 @@ public class OgnlContext
 
     /**
      * Gets the current class type being evaluated on the stack, as set by {@link #setCurrentType(Class)}.
-     * 
+     *
      * @return The current object type, may be null.
      */
     public Class<?> getCurrentType()
@@ -365,7 +364,7 @@ public class OgnlContext
     /**
      * Represents the last known object type on the evaluation stack, will be the value of the last known
      * {@link #getCurrentType()}.
-     * 
+     *
      * @return The previous type of object on the stack, may be null.
      */
     public Class<?> getPreviousType()

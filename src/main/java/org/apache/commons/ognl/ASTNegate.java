@@ -45,16 +45,13 @@ class ASTNegate
     {
         String source = children[0].toGetSourceString( context, target );
 
-        if ( !ASTNegate.class.isInstance( children[0] ) )
+        if ( !(children[0] instanceof ASTNegate))
         {
             return "-" + source;
         }
-        else
-        {
-            return "-(" + source + ")";
-        }
+        return "-(" + source + ")";
     }
-    
+
     public <R, P> R accept( NodeVisitor<? extends R, ? super P> visitor, P data )
         throws OgnlException
     {

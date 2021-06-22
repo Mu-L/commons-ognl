@@ -169,10 +169,7 @@ public class ASTMethod
 
                 return "";
             }
-            else
-            {
-                getterClass = method.getReturnType();
-            }
+            getterClass = method.getReturnType();
 
             // TODO: This is a hacky workaround until javassist supports varargs method invocations
             boolean varArgs = method.isVarArgs();
@@ -277,10 +274,10 @@ public class ASTMethod
         }
 
         String post = "";
-        String result = "." + method.getName() + "(";
+        StringBuilder result = new StringBuilder("." + method.getName() + "(");
 
         if ( method.getReturnType() != void.class && method.getReturnType().isPrimitive() && ( parent == null
-            || !ASTTest.class.isInstance( parent ) ) )
+            || !(parent instanceof ASTTest)) )
         {
             Class wrapper = OgnlRuntime.getPrimitiveWrapperClass( method.getReturnType() );
 
@@ -313,7 +310,7 @@ public class ASTMethod
                 {
                     if ( i > 0 )
                     {
-                        result += ", ";
+                        result.append(", ");
                     }
 
                     Class prevType = context.getCurrentType();
@@ -334,8 +331,8 @@ public class ASTMethod
 
                     if ( parmString == null || parmString.trim().length() < 1 )
                     {
-                        if ( ASTProperty.class.isInstance( child ) || ASTMethod.class.isInstance( child )
-                            || ASTStaticMethod.class.isInstance( child ) || ASTChain.class.isInstance( child ) )
+                        if ( child instanceof ASTProperty || child instanceof ASTMethod
+                            || child instanceof ASTStaticMethod || child instanceof ASTChain)
                         {
                             throw new UnsupportedCompilationException(
                                 "ASTMethod setter child returned null from a sub property expression." );
@@ -344,7 +341,7 @@ public class ASTMethod
                     }
 
                     // to undo type setting of constants when used as method parameters
-                    if ( ASTConst.class.isInstance( child ) )
+                    if (child instanceof ASTConst)
                     {
                         context.setCurrentType( prevType );
                     }
@@ -376,7 +373,7 @@ public class ASTMethod
                             ASTMethodUtil.getParmString( context, parms[i], parmString, child, valueClass, ".class)" );
                     }
 
-                    result += parmString;
+                    result.append(parmString);
                 }
 
                 if ( prevCast != null )

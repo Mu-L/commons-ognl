@@ -75,70 +75,67 @@ public class ASTChain
         {
             boolean handled = false;
 
-            if ( i < ilast )
+            if ( (i < ilast) && (children[i] instanceof ASTProperty) )
             {
-                if ( children[i] instanceof ASTProperty )
+                ASTProperty propertyNode = (ASTProperty) children[i];
+                int indexType = propertyNode.getIndexedPropertyType( context, result );
+
+                if ( ( indexType != OgnlRuntime.INDEXED_PROPERTY_NONE )
+                    && ( children[i + 1] instanceof ASTProperty ) )
                 {
-                    ASTProperty propertyNode = (ASTProperty) children[i];
-                    int indexType = propertyNode.getIndexedPropertyType( context, result );
+                    ASTProperty indexNode = (ASTProperty) children[i + 1];
 
-                    if ( ( indexType != OgnlRuntime.INDEXED_PROPERTY_NONE )
-                        && ( children[i + 1] instanceof ASTProperty ) )
+                    if ( indexNode.isIndexedAccess() )
                     {
-                        ASTProperty indexNode = (ASTProperty) children[i + 1];
+                        Object index = indexNode.getProperty( context, result );
 
-                        if ( indexNode.isIndexedAccess() )
+                        if ( index instanceof DynamicSubscript )
                         {
-                            Object index = indexNode.getProperty( context, result );
-
-                            if ( index instanceof DynamicSubscript )
+                            if ( indexType == OgnlRuntime.INDEXED_PROPERTY_INT )
                             {
-                                if ( indexType == OgnlRuntime.INDEXED_PROPERTY_INT )
-                                {
-                                    Object array = propertyNode.getValue( context, result );
-                                    int len = Array.getLength( array );
+                                Object array = propertyNode.getValue( context, result );
+                                int len = Array.getLength( array );
 
-                                    switch ( ( (DynamicSubscript) index ).getFlag() )
-                                    {
-                                        case DynamicSubscript.ALL:
-                                            result = Array.newInstance( array.getClass().getComponentType(), len );
-                                            System.arraycopy( array, 0, result, 0, len );
-                                            handled = true;
-                                            i++;
-                                            break;
-                                        case DynamicSubscript.FIRST:
-                                            index = ( len > 0 ) ? 0 : -1;
-                                            break;
-                                        case DynamicSubscript.MID:
-                                            index = ( len > 0 ) ? ( len / 2 ) : -1;
-                                            break;
-                                        case DynamicSubscript.LAST:
-                                            index = ( len > 0 ) ? ( len - 1 ) : -1;
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                                else
+                                switch ( ( (DynamicSubscript) index ).getFlag() )
                                 {
-                                    if ( indexType == OgnlRuntime.INDEXED_PROPERTY_OBJECT )
-                                    {
-                                        throw new OgnlException( "DynamicSubscript '" + indexNode
-                                            + "' not allowed for object indexed property '" + propertyNode + "'" );
-                                    }
+                                    case DynamicSubscript.ALL:
+                                        result = Array.newInstance( array.getClass().getComponentType(), len );
+                                        System.arraycopy( array, 0, result, 0, len );
+                                        handled = true;
+                                        i++;
+                                        break;
+                                    case DynamicSubscript.FIRST:
+                                        index = ( len > 0 ) ? 0 : -1;
+                                        break;
+                                    case DynamicSubscript.MID:
+                                        index = ( len > 0 ) ? ( len / 2 ) : -1;
+                                        break;
+                                    case DynamicSubscript.LAST:
+                                        index = ( len > 0 ) ? ( len - 1 ) : -1;
+                                        break;
+                                    default:
+                                        break;
                                 }
                             }
-                            if ( !handled )
+                            else
                             {
-                                result =
-                                    OgnlRuntime.getIndexedProperty( 
-                                        context,
-                                        result,
-                                        propertyNode.getProperty( context, result ).toString(),
-                                        index );
-                                handled = true;
-                                i++;
+                                if ( indexType == OgnlRuntime.INDEXED_PROPERTY_OBJECT )
+                                {
+                                    throw new OgnlException( "DynamicSubscript '" + indexNode
+                                        + "' not allowed for object indexed property '" + propertyNode + "'" );
+                                }
                             }
+                        }
+                        if ( !handled )
+                        {
+                            result =
+                                OgnlRuntime.getIndexedProperty(
+                                    context,
+                                    result,
+                                    propertyNode.getProperty( context, result ).toString(),
+                                    index );
+                            handled = true;
+                            i++;
                         }
                     }
                 }
@@ -158,77 +155,74 @@ public class ASTChain
 
         for ( int i = 0, ilast = children.length - 2; i <= ilast; ++i )
         {
-            if ( i <= ilast )
+            if ( (i <= ilast) && (children[i] instanceof ASTProperty) )
             {
-                if ( children[i] instanceof ASTProperty )
+                ASTProperty propertyNode = (ASTProperty) children[i];
+                int indexType = propertyNode.getIndexedPropertyType( context, target );
+
+                if ( ( indexType != OgnlRuntime.INDEXED_PROPERTY_NONE )
+                    && ( children[i + 1] instanceof ASTProperty ) )
                 {
-                    ASTProperty propertyNode = (ASTProperty) children[i];
-                    int indexType = propertyNode.getIndexedPropertyType( context, target );
+                    ASTProperty indexNode = (ASTProperty) children[i + 1];
 
-                    if ( ( indexType != OgnlRuntime.INDEXED_PROPERTY_NONE )
-                        && ( children[i + 1] instanceof ASTProperty ) )
+                    if ( indexNode.isIndexedAccess() )
                     {
-                        ASTProperty indexNode = (ASTProperty) children[i + 1];
+                        Object index = indexNode.getProperty( context, target );
 
-                        if ( indexNode.isIndexedAccess() )
+                        if ( index instanceof DynamicSubscript )
                         {
-                            Object index = indexNode.getProperty( context, target );
-
-                            if ( index instanceof DynamicSubscript )
+                            if ( indexType == OgnlRuntime.INDEXED_PROPERTY_INT )
                             {
-                                if ( indexType == OgnlRuntime.INDEXED_PROPERTY_INT )
-                                {
-                                    Object array = propertyNode.getValue( context, target );
-                                    int len = Array.getLength( array );
+                                Object array = propertyNode.getValue( context, target );
+                                int len = Array.getLength( array );
 
-                                    switch ( ( (DynamicSubscript) index ).getFlag() )
-                                    {
-                                        case DynamicSubscript.ALL:
-                                            System.arraycopy( target, 0, value, 0, len );
-                                            handled = true;
-                                            i++;
-                                            break;
-                                        case DynamicSubscript.FIRST:
-                                            index = ( len > 0 ) ? 0 : -1;
-                                            break;
-                                        case DynamicSubscript.MID:
-                                            index = ( len > 0 ) ? ( len / 2 ) : -1;
-                                            break;
-                                        case DynamicSubscript.LAST:
-                                            index = ( len > 0 ) ? ( len - 1 ) : -1;
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                                else
+                                switch ( ( (DynamicSubscript) index ).getFlag() )
                                 {
-                                    if ( indexType == OgnlRuntime.INDEXED_PROPERTY_OBJECT )
-                                    {
-                                        throw new OgnlException( "DynamicSubscript '" + indexNode
-                                            + "' not allowed for object indexed property '" + propertyNode + "'" );
-                                    }
+                                    case DynamicSubscript.ALL:
+                                        System.arraycopy( target, 0, value, 0, len );
+                                        handled = true;
+                                        i++;
+                                        break;
+                                    case DynamicSubscript.FIRST:
+                                        index = ( len > 0 ) ? 0 : -1;
+                                        break;
+                                    case DynamicSubscript.MID:
+                                        index = ( len > 0 ) ? ( len / 2 ) : -1;
+                                        break;
+                                    case DynamicSubscript.LAST:
+                                        index = ( len > 0 ) ? ( len - 1 ) : -1;
+                                        break;
+                                    default:
+                                        break;
                                 }
                             }
-                            if ( !handled && i == ilast )
+                            else
                             {
-                                OgnlRuntime.setIndexedProperty( context, target,
-                                                                propertyNode.getProperty( context, target ).toString(),
-                                                                index, value );
-                                handled = true;
-                                i++;
+                                if ( indexType == OgnlRuntime.INDEXED_PROPERTY_OBJECT )
+                                {
+                                    throw new OgnlException( "DynamicSubscript '" + indexNode
+                                        + "' not allowed for object indexed property '" + propertyNode + "'" );
+                                }
                             }
-                            else if ( !handled )
-                            {
-                                target =
-                                    OgnlRuntime.getIndexedProperty( 
-                                        context,
-                                        target,
-                                        propertyNode.getProperty( context, target ).toString(),
-                                        index );
-                                i++;
-                                continue;
-                            }
+                        }
+                        if ( !handled && i == ilast )
+                        {
+                            OgnlRuntime.setIndexedProperty( context, target,
+                                                            propertyNode.getProperty( context, target ).toString(),
+                                                            index, value );
+                            handled = true;
+                            i++;
+                        }
+                        else if ( !handled )
+                        {
+                            target =
+                                OgnlRuntime.getIndexedProperty(
+                                    context,
+                                    target,
+                                    propertyNode.getProperty( context, target ).toString(),
+                                    index );
+                            i++;
+                            continue;
                         }
                     }
                 }
@@ -301,22 +295,22 @@ public class ASTChain
 
                     // System.out.println("astchain child returned >>  " + value + "  <<");
 
-                    if ( ASTCtor.class.isInstance( child ) )
+                    if (child instanceof ASTCtor)
                     {
                         constructor = true;
                     }
 
-                    if ( NodeType.class.isInstance( child ) && ( (NodeType) child ).getGetterClass() != null )
+                    if ( child instanceof NodeType && ( (NodeType) child ).getGetterClass() != null )
                     {
                         lastType = (NodeType) child;
                     }
 
                     // System.out.println("Astchain i: " + i + " currentobj : " + context.getCurrentObject() +
                     // " and root: " + context.getRoot());
-                    if ( !ASTVarRef.class.isInstance( child ) && !constructor && !(
-                        OrderedReturn.class.isInstance( child )
+                    if ( !(child instanceof ASTVarRef) && !constructor && !(
+                        child instanceof OrderedReturn
                             && ( (OrderedReturn) child ).getLastExpression() != null ) && ( parent == null
-                        || !ASTSequence.class.isInstance( parent ) ) )
+                        || !(parent instanceof ASTSequence)) )
                     {
                         value = OgnlRuntime.getCompiler( context ).castExpression( context, child, value );
                     }
@@ -327,7 +321,7 @@ public class ASTChain
                      * context.getPreviousType() + " prev accessor " + context.getPreviousAccessor());
                      */
 
-                    if ( OrderedReturn.class.isInstance( child )
+                    if ( child instanceof OrderedReturn
                         && ( (OrderedReturn) child ).getLastExpression() != null )
                     {
                         ordered = true;
@@ -349,8 +343,8 @@ public class ASTChain
                             lastExpression = context.remove( ExpressionCompiler.PRE_CAST ) + lastExpression;
                         }
                     }
-                    else if ( ASTOr.class.isInstance( child ) || ASTAnd.class.isInstance( child )
-                        || ASTCtor.class.isInstance( child ) || ( ASTStaticField.class.isInstance( child )
+                    else if ( child instanceof ASTOr || child instanceof ASTAnd
+                        || child instanceof ASTCtor || ( child instanceof ASTStaticField
                         && parent == null ) )
                     {
                         context.put( "_noRoot", "true" );
@@ -395,7 +389,7 @@ public class ASTChain
         {
             throw new UnsupportedCompilationException( "Can't compile nested chain expressions." );
         }
-        
+
         if ( target != null )
         {
             context.setCurrentObject( target );
@@ -409,7 +403,7 @@ public class ASTChain
         {
             if ( ( children != null ) && ( children.length > 0 ) )
             {
-                if ( ASTConst.class.isInstance( children[0] ) )
+                if (children[0] instanceof ASTConst)
                 {
                     throw new UnsupportedCompilationException( "Can't modify constant values." );
                 }
@@ -429,22 +423,22 @@ public class ASTChain
 
                     // System.out.println("astchain setter child returned >>  " + value + "  <<");
 
-                    if ( ASTCtor.class.isInstance( children[i] ) )
+                    if (children[i] instanceof ASTCtor)
                     {
                         constructor = true;
                     }
-                    
-                    if ( NodeType.class.isInstance( children[i] )
+
+                    if ( children[i] instanceof NodeType
                         && ( (NodeType) children[i] ).getGetterClass() != null )
                     {
                         lastType = (NodeType) children[i];
                     }
 
-                    if ( !ASTVarRef.class.isInstance( children[i] )
+                    if ( !(children[i] instanceof ASTVarRef)
                         && !constructor
-                        && !( OrderedReturn.class.isInstance( children[i] )
+                        && !( children[i] instanceof OrderedReturn
                         && ( (OrderedReturn) children[i] ).getLastExpression() != null )
-                        && ( parent == null || !ASTSequence.class.isInstance( parent ) ) )
+                        && ( parent == null || !(parent instanceof ASTSequence)) )
                     {
                         value = OgnlRuntime.getCompiler( context ).castExpression( context, children[i], value );
                     }
@@ -457,8 +451,8 @@ public class ASTChain
                      * OgnlRuntime.getCompiler().castExpression(context, _children[i], value); }
                      */
 
-                    if ( ASTOr.class.isInstance( children[i] ) || ASTAnd.class.isInstance( children[i] )
-                        || ASTCtor.class.isInstance( children[i] ) || ASTStaticField.class.isInstance( children[i] ) )
+                    if ( children[i] instanceof ASTOr || children[i] instanceof ASTAnd
+                        || children[i] instanceof ASTCtor || children[i] instanceof ASTStaticField)
                     {
                         context.put( "_noRoot", "true" );
                         result = value;
@@ -467,7 +461,7 @@ public class ASTChain
                     {
                         result += value;
                     }
-                    
+
                     context.put( "_currentChain", result );
                 }
             }
@@ -484,10 +478,10 @@ public class ASTChain
         {
             setterClass = lastType.getSetterClass();
         }
-        
+
         return result;
     }
-    
+
     public <R, P> R accept( NodeVisitor<? extends R, ? super P> visitor, P data )
         throws OgnlException
     {
